@@ -5,7 +5,13 @@ RUN git clone https://github.com/NHAS/wag
 WORKDIR /app/wag
 
 RUN apt-get update -y
-RUN apt-get install -y build-essential llvm clang
+
+# see PR #1
+RUN ln -s /usr/include/x86_64-linux-gnu/asm /usr/include/asm
+
+# added libbpf-dev, PR #1
+RUN apt-get install -y build-essential llvm clang libbpf-dev npm
+RUN npm install gulp-cli -g
 
 RUN make
 
@@ -14,9 +20,9 @@ RUN git clone https://github.com/WireGuard/wireguard-tools
 WORKDIR /app/wireguard-tools/src
 RUN make
 
-FROM ubi9-minimal:latest
+FROM redhat/ubi9-minimal:latest
 RUN microdnf update -y
-RUN microdnf install -y iptables
+RUN microdnf install -y iptables nc
 
 COPY --from=builder /app/wireguard-tools/src/wg /bin
 
@@ -29,5 +35,6 @@ COPY docker_entrypoint.sh /
 RUN chmod +x /docker_entrypoint.sh
 
 VOLUME /data
+VOLUME /cfg
 
 CMD ["/docker_entrypoint.sh"]
